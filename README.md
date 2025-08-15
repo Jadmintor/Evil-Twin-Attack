@@ -51,3 +51,145 @@ SentinelCAP is a comprehensive WiFi security testing and penetration testing too
 - **Battery Pack** for portable operations
 
 ### Recommended Setup
+ESP8266 NodeMCU v1.0
+
+CPU: 80MHz (160MHz boost available)
+Flash: 4MB
+RAM: 80KB
+WiFi: 802.11 b/g/n
+
+Run
+Copy code
+
+## 📦 Installation
+
+### Prerequisites
+- Arduino IDE (1.8.0 or later)
+- ESP8266 Board Package
+- Required Libraries (see below)
+
+### Required Libraries
+```cpp
+// Install via Arduino Library Manager
+ESP8266WiFi
+DNSServer
+ESP8266WebServer
+ArduinoJson (v6.x)
+Adafruit GFX Library
+Adafruit SSD1306 (if using OLED)
+Installation Steps
+Clone the Repository
+
+bash
+
+Run
+Copy code
+git clone https://github.com/yourusername/SentinelCAP.git
+cd SentinelCAP
+Install Arduino IDE and ESP8266 Package
+
+Download Arduino IDE from arduino.cc
+Add ESP8266 board URL: http://arduino.esp8266.com/stable/package_esp8266com_index.json
+Install ESP8266 package via Board Manager
+Install Required Libraries
+
+Open Arduino IDE
+Go to Sketch → Include Library → Manage Libraries
+Install all required libraries listed above
+Configure and Upload
+
+cpp
+4 lines
+Click to expand
+// In SentinelCAP.ino, configure your settings:
+#define DEFAULT_AP_SSID "SentinelCAP"
+...
+Upload to ESP8266
+
+Select your ESP8266 board and port
+Upload the sketch
+🚀 Usage Guide
+Initial Setup
+Connect to SentinelCAP Network
+
+SSID: SentinelCAP (or your configured SSID)
+Password: 12345678 (default)
+Access Web Interface
+
+Open browser and navigate to: http://192.168.4.1
+Default dashboard loads automatically
+Basic Operations
+WiFi Scanning
+javascript
+5 lines
+Click to expand
+// Scan for available networks
+1. Navigate to "WiFi Scanner" tab
+...
+Evil Twin Attack
+javascript
+5 lines
+Click to expand
+// Setup and launch Evil Twin
+1. Select target network from scanner
+...
+Deauthentication Attack
+javascript
+5 lines
+Click to expand
+// Disconnect clients from target network
+1. Ensure target network is selected
+...
+Mass SSID Spoofing
+javascript
+5 lines
+Click to expand
+// Broadcast multiple fake SSIDs
+1. Navigate to "Mass Spoofing" section
+...
+Advanced Configuration
+Custom Captive Portal Templates
+html
+18 lines
+Click to expand
+<!-- Template variables available -->
+{SSID} - Target network name
+...
+Settings Configuration
+json
+8 lines
+Click to expand
+{
+"device_name": "SentinelCAP",
+...
+📊 API Reference
+REST Endpoints
+Network Management
+http
+
+Run
+Copy code
+GET /api/scan          # Scan for WiFi networks
+GET /api/status        # Get device status
+POST /api/select       # Select target network
+Attack Control
+http
+
+Run
+Copy code
+POST /api/start-evil-twin    # Start Evil Twin attack
+POST /api/stop-evil-twin     # Stop Evil Twin attack
+POST /api/start-deauth       # Start deauth attack
+POST /api/stop-deauth        # Stop deauth attack
+POST /api/start-mass-spoof   # Start mass SSID spoofing
+POST /api/stop-mass-spoof    # Stop mass SSID spoofing
+Data Management
+http
+
+Run
+Copy code
+GET /api/passwords     # Get captured passwords
+DELETE /api/passwords  # Clear password logs
+GET /api/files         # List SPIFFS files
+POST /api/upload       # Upload file to device
+DELETE /api/files/{filename}  # Delete file
