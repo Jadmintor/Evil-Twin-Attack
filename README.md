@@ -69,7 +69,6 @@ Copy code
 - Required Libraries (see below)
 
 ### Required Libraries
-```cpp
 // Install via Arduino Library Manager
 ESP8266WiFi
 DNSServer
@@ -80,10 +79,7 @@ Adafruit SSD1306 (if using OLED)
 Installation Steps
 Clone the Repository
 
-bash
 
-Run
-Copy code
 git clone https://github.com/yourusername/SentinelCAP.git
 cd SentinelCAP
 Install Arduino IDE and ESP8266 Package
@@ -98,9 +94,7 @@ Go to Sketch → Include Library → Manage Libraries
 Install all required libraries listed above
 Configure and Upload
 
-cpp
-4 lines
-Click to expand
+
 // In SentinelCAP.ino, configure your settings:
 #define DEFAULT_AP_SSID "SentinelCAP"
 ...
