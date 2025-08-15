@@ -1,7 +1,3 @@
-md
-
-Run
-Copy code
 # SentinelCAP - Advanced WiFi Security Testing Tool
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
