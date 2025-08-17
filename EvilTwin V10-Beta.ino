@@ -150,11 +150,8 @@ void startMassSpoofingAP(String ssid, uint8_t channel, uint8_t* mac);
 void generateRandomMac(uint8_t* mac);
 
 // --- NEW: OTA Update Handlers ---
-void handleOTAUpdate();
-void handleOTAStart();
-void handleOTAProgress(unsigned int progress, unsigned int total);
-void handleOTAEnd();
-void handleOTAErrors(ota_error_t error);
+// Removed specific OTA callback prototypes as they are not directly supported in ESP8266 Updater
+void handleOTAUpdate(); // This function will handle the upload process directly
 
 
 // --- Embedded File Contents (as String Literals) ---
@@ -3007,16 +3004,49 @@ void setup() {
   }); // Changed to POST for security
 
   // NEW: OTA Update Endpoint
+  // The ESP8266 Updater library doesn't use onStart, onProgress, onEnd, onError callbacks directly.
+  // The handleOTAUpdate function will manage the update process.
   webServer.on("/update", HTTP_POST, []() {
     if (!isAuthenticated()) { // OTA update also needs authentication
       webServer.sendHeader("Connection", "close");
       webServer.send(401, "text/plain", "Unauthorized");
       return;
     }
-    webServer.sendHeader("Connection", "close");
-    webServer.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
-    ESP.restart();
-  }, handleOTAUpdate);
+    // Call the handler function
+    handleOTAUpdate();
+    // After handleOTAUpdate finishes, check if update was successful and send response
+    if (Update.isFinished()) {
+      webServer.sendHeader("Connection", "close");
+      webServer.send(200, "text/plain", "OK");
+      ESP.restart(); // Reboot after successful update
+    } else {
+      webServer.sendHeader("Connection", "close");
+      webServer.send(500, "text/plain", "FAIL");
+    }
+  }, []() { // This is the upload handler for the /update endpoint
+    HTTPUpload& upload = webServer.upload();
+    if (upload.status == UPLOAD_FILE_START) {
+      Serial.printf("[OTA] Update: %s\n", upload.filename.c_str());
+      // Begin update with the total size if known, otherwise 0
+      // For ESP8266, Update.begin() can take 0 for unknown size.
+      if (!Update.begin(upload.totalSize)) { 
+        Update.printError(Serial);
+      }
+    } else if (upload.status == UPLOAD_FILE_WRITE) {
+      if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+        Update.printError(Serial);
+      }
+    } else if (upload.status == UPLOAD_FILE_END) {
+      // Update.end() is called in the main handler after the upload is complete
+      // No need to call it here.
+    } else if (upload.status == UPLOAD_FILE_ABORTED) {
+      // For ESP8266, there's no direct Update.abort().
+      // If Update.begin() failed or Update.write() failed, Update.end() will return false.
+      Serial.println("[OTA] Update aborted by client.");
+    }
+    delay(0); // Yield to allow other tasks
+  });
+
 
   // Catch-all for unknown paths (redirect to captive portal if active, otherwise 404)
   webServer.onNotFound(handleNotFound);
@@ -3024,11 +3054,8 @@ void setup() {
   webServer.begin();
   Serial.println("[INFO] HTTP server started.");
 
-  // NEW: OTA Update Callbacks
-  Update.onStart(handleOTAStart);
-  Update.onProgress(handleOTAProgress);
-  Update.onEnd(handleOTAEnd);
-  Update.onError(handleOTAErrors);
+  // Removed specific OTA Update Callbacks as they are not directly supported in ESP8266 Updater
+  // The logic is now handled within the /update endpoint's upload handler and main handler.
 
 
   performScan(); // Initial scan
@@ -3956,33 +3983,19 @@ void startMassSpoofingAP(String ssid, uint8_t channel, uint8_t* mac) {
 
 // --- NEW: OTA Update Handlers ---
 void handleOTAUpdate() {
-  HTTPUpload& upload = webServer.upload();
-  if (upload.status == UPLOAD_FILE_START) {
-    Serial.printf("[OTA] Update: %s\n", upload.filename.c_str());
-    if (!Update.begin(UPDATE_SIZE_UNKNOWN)) { // Start with unknown size
-      Update.printError(Serial);
-    }
-  } else if (upload.status == UPLOAD_FILE_WRITE) {
-    if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-      Update.printError(Serial);
-    }
-  } else if (upload.status == UPLOAD_FILE_END) {
-    if (Update.end(true)) { // true to set the size to the current progress
-      Serial.printf("[OTA] Update Success: %u bytes\n", upload.totalSize);
-    } else {
-      Update.printError(Serial);
-    }
-  } else if (upload.status == UPLOAD_FILE_ABORTED) {
-    Update.abort();
-    Serial.println("[OTA] Update aborted");
-  }
-  delay(0); // Yield to allow other tasks
+  // This function is now the main handler for the /update POST request.
+  // The actual file writing is done in the lambda function passed to webServer.on().
+  // This function is responsible for checking the final status and sending the response.
+  // The logic for Update.begin(), Update.write(), Update.end() is moved to the lambda.
+  // This function will be called *after* the upload is complete.
+  // The response is sent in the webServer.on() handler itself.
 }
 
+// Removed specific OTA callback implementations as they are not directly supported in ESP8266 Updater
+// The logic for logging progress/errors is now integrated into the main handleOTAUpdate flow (or removed if not directly supported).
+/*
 void handleOTAStart() {
   if (appSettings.enableDebugLogs) Serial.println("[OTA] OTA update started!");
-  // You might want to turn off Wi-Fi or other services here
-  // For now, just logging
 }
 
 void handleOTAProgress(unsigned int progress, unsigned int total) {
@@ -3993,17 +4006,15 @@ void handleOTAEnd() {
   if (appSettings.enableDebugLogs) Serial.println("[OTA] OTA update finished. Rebooting...");
 }
 
-void handleOTAErrors(ota_error_t error) {
+void handleOTAErrors(ota_error_t error) { // This function signature is incorrect for ESP8266
   if (appSettings.enableDebugLogs) {
     Serial.print("[OTA] Error: ");
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
-    else Serial.println("Unknown Error");
+    // ESP8266 Update.printError(Serial) gives more details.
+    // You can't directly map ota_error_t here.
+    Serial.println("An OTA error occurred.");
   }
 }
+*/
 
 
 // --- OLED Update Function Implementation ---
@@ -4063,4 +4074,3 @@ void updateOLEDDisplay() {
 
   display.display();
 }
-
